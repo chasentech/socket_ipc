@@ -1,0 +1,12 @@
+[2020-10-10 15:11:40] test LOG_PRINTF 20
+[2020-10-10 15:11:40] [PERROR] [104] [../log.cpp] test LOG_PERROR: Success
+[2020-10-10 15:11:40] [ERROR]  [105] [../log.cpp] test LOG_ERROR 20
+[2020-10-10 15:11:40] [WARN]   [106] [../log.cpp] test LOG_WARN 20
+[2020-10-10 15:11:40] [INFO]   [107] [../log.cpp] test LOG_INFO 20
+[2020-10-10 15:11:40] [DEBUG]  [108] [../log.cpp] test LOG_DEBUG 20
+[2020-10-10 15:13:27] test LOG_PRINTF 20
+[2020-10-10 15:13:27] [PERROR] [104] [../log.cpp] test LOG_PERROR: Success
+[2020-10-10 15:13:27] [ERROR]  [105] [../log.cpp] test LOG_ERROR 20
+[2020-10-10 15:13:27] [WARN]   [106] [../log.cpp] test LOG_WARN 20
+[2020-10-10 15:13:27] [INFO]   [107] [../log.cpp] test LOG_INFO 20
+[2020-10-10 15:13:27] [DEBUG]  [108] [../log.cpp] test LOG_DEBUG 20

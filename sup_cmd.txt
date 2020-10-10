@@ -1,0 +1,10 @@
+ls
+cat
+grep
+sed
+awk
+ffmpeg
+date
+free
+who
+ps
