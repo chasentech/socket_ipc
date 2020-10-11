@@ -15,7 +15,7 @@ platform: ubuntu
 ./cli -n pc
 
 ## description
-protocol
+simple protocol
 `# type len date $`
 
 simple log system
