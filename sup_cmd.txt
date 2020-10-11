@@ -8,3 +8,4 @@ date
 free
 who
 ps
+echo
