@@ -9,3 +9,5 @@ free
 who
 ps
 echo
+cd
+pwd

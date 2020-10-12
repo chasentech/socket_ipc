@@ -70,6 +70,20 @@ int get_fd_by_name(vector<CliInfo> &vec, char *name)
     return -1;
 }
 
+int get_name_by_fd(vector<CliInfo> &vec, int sockfd, char *name)
+{
+    vector<CliInfo>::iterator it;
+    for (it = vec.begin(); it != vec.end(); it++) {
+        if (it->sockfd == sockfd) {
+            if (strcpy(name, it->name) == NULL) {
+                perror("strcpy failed: ");
+            }
+            else return 0;
+        }
+    }
+    return -1;
+}
+
 int set_name_by_fd(vector<CliInfo> &vec, char *name, int sockfd)
 {
     vector<CliInfo>::iterator it;
@@ -141,7 +155,7 @@ int send_list(vector<CliInfo> &vec, int sockfd)
     memset(&dataDesc.buff, 0, MAX_BUF_LEN);
 
     vector<CliInfo>::iterator it;
-    printf("vector size = %ld\n", vec.size());
+    printf("client number is = %ld\n", vec.size());
     for (it = vec.begin(); it != vec.end(); it++) {
         char tmp[256] = {0};
         sprintf(tmp, "name:%-10s, IP:%-16s, port:%d, it_fd:%d, to_fd:%d",
@@ -441,8 +455,13 @@ int main(int argc, char *argv[])
                         case MSG_CONTENT: {
                             printf("MSG_CONTENT\n");
                             int to_fd = get_to_fd_by_fd(g_vec_cli_info, sockfd);
-                            printf("[%d]-->[%d]\n", sockfd, to_fd);
                             if (to_fd >= 0) {
+                                char name_tmp_f[20] = {0};
+                                char name_tmp_t[20] = {0};
+                                get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_f);
+                                get_name_by_fd(g_vec_cli_info, to_fd, name_tmp_t);
+                                printf("[%s]-->[%s]\n", name_tmp_f, name_tmp_t);
+
                                 if (write(to_fd, buf_recv, len) < 0) {
                                     perror("ser write failed");
                                     set_to_fd_by_fd(g_vec_cli_info, sockfd, sockfd); // set to_fd is self
@@ -456,7 +475,9 @@ int main(int argc, char *argv[])
 
                         case MSG_GET_SER_STATUS: {
                             printf("MSG_GET_SER_STATUS\n");
-                            printf("[ser]-->[%d]\n", sockfd);
+                            char name_tmp_t[20] = {0};
+                            get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_t);
+                            printf("[ser]-->[%s]\n", name_tmp_t);
                             send_server_info(sockfd);
                             break;
                         }
@@ -464,8 +485,12 @@ int main(int argc, char *argv[])
                         case MSG_GET_SITE_STATUS: {
                             printf("MSG_GET_SITE_STATUS\n");
                             int to_fd = get_to_fd_by_fd(g_vec_cli_info, sockfd);
-                            printf("[%d]-->[%d]\n", sockfd, to_fd);
                             if (to_fd >= 0) {
+                                char name_tmp_f[20] = {0};
+                                char name_tmp_t[20] = {0};
+                                get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_f);
+                                get_name_by_fd(g_vec_cli_info, to_fd, name_tmp_t);
+                                printf("[%s]-->[%s]\n", name_tmp_f, name_tmp_t);
                                 if (write(to_fd, buf_recv, len) < 0) {
                                     perror("ser write failed");
                                     set_to_fd_by_fd(g_vec_cli_info, sockfd, sockfd); // set to_fd is self
@@ -479,14 +504,18 @@ int main(int argc, char *argv[])
 
                         case MSG_GET_LIST: {
                             printf("MSG_GET_LIST\n");
-                            printf("[ser]-->[%d]\n", sockfd);
+                            char name_tmp_t[20] = {0};
+                            get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_t);
+                            printf("[ser]-->[%s]\n", name_tmp_t);
                             send_list(g_vec_cli_info, sockfd);
                             break;
                         }
 
                         case MSG_EXE_CMD_SER: {
                             printf("MSG_EXE_CMD_SER\n");
-                            printf("[ser]-->[%d]\n", sockfd);
+                            char name_tmp_t[20] = {0};
+                            get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_t);
+                            printf("[ser]-->[%s]\n", name_tmp_t);
                             send_cmd_ret(sockfd, dataDesc.buff);
                             break;
                         }
@@ -494,8 +523,12 @@ int main(int argc, char *argv[])
                         case MSG_EXE_CMD_SITE: {
                             printf("MSG_EXE_CMD_SITE\n");
                             int to_fd = get_to_fd_by_fd(g_vec_cli_info, sockfd);
-                            printf("[%d]-->[%d]\n", sockfd, to_fd);
                             if (to_fd >= 0) {
+                                char name_tmp_f[20] = {0};
+                                char name_tmp_t[20] = {0};
+                                get_name_by_fd(g_vec_cli_info, sockfd, name_tmp_f);
+                                get_name_by_fd(g_vec_cli_info, to_fd, name_tmp_t);
+                                printf("[%s]-->[%s]\n", name_tmp_f, name_tmp_t);
                                 if (write(to_fd, buf_recv, len) < 0) {
                                     perror("ser write failed");
                                     set_to_fd_by_fd(g_vec_cli_info, sockfd, sockfd); // set to_fd is self
