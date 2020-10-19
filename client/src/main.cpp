@@ -6,7 +6,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
-#include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -14,6 +13,9 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <sys/sysinfo.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <vector>
@@ -21,6 +23,9 @@
 #include "wrap.h"
 #include "en_de_code.h"
 #include "log.h"
+
+char fifo_name_pre[50] = "/tmp/fifo_cli";
+int fd_fifo = -1;
 
 static std::vector<std::string> g_sup_cmd;
 
@@ -37,7 +42,10 @@ void signalstop(int sign_no)
         uint64_t u = 10;
         ssize_t s = write(efd_thread, &u, sizeof(uint64_t));
         if (s != sizeof(uint64_t))
-            perror("write");
+            perror("efd_thread write");
+
+        if (write(fd_fifo, "end", sizeof("end")) < 0)
+            perror("fd_fifo write");
 
         printf("in signalstop!\n");
     }
@@ -220,17 +228,19 @@ void *thread_rece(void *arg)
     return NULL;
 }
 
-static const char *short_options = "p:i:n:";
+static const char *short_options = "Ip:i:n:";
 static struct option long_options[] = {
-    {"connect port",    required_argument, 0, 'p'},
-    {"connect IP",      required_argument, 0, 'i'},
-    {"cli name",        required_argument, 0, 'n'},
+    {"input_mode",      required_argument, 0, 'I'},
+    {"connect_port",    required_argument, 0, 'p'},
+    {"connect_IP",      required_argument, 0, 'i'},
+    {"cli_name",        required_argument, 0, 'n'},
     {0, 0, 0, 0}
 };
 
 static void usage(int argc, char *argv[])
 {
     printf("%s usage:\n", argv[0]);
+    printf("\t -I:  input mode, for interactive\n");
     printf("\t -i:  input server IP addr, default 127.0.0.1\n");
     printf("\t -p:  input server port, default 10500\n");
     printf("\t -n:  input cli name\n");
@@ -278,6 +288,54 @@ int load_sup_cmd()
     return 0;
 }
 
+void input_loop(const char *fifo_name)
+{
+	int fd = open(fifo_name, O_WRONLY);
+	if (fd < 0) {
+		perror("open failed");
+		return;
+	}
+
+    fd_set allset;
+    fd_set fdset;
+    FD_ZERO(&allset);
+    FD_ZERO(&fdset);
+    FD_SET(STDIN_FILENO, &allset);
+    int max_fd = STDIN_FILENO;
+
+    printf("input 'c help' to get help\n");
+    while (is_running) {
+        fdset = allset;
+        int nready = select(max_fd+1, &fdset, NULL, NULL, NULL);
+        if (nready <= 0) {
+            perror("select error");
+            break;
+        }
+
+        if (FD_ISSET(STDIN_FILENO, &fdset)) {
+            char buf[256] = {0};
+            if (fgets(buf, 256, stdin) == NULL) {
+                perror("fgets error: ");
+            }
+
+            if (buf[0] == '\n') {
+                continue;
+            }
+
+            int len_tmp = strlen(buf);
+            if (buf[len_tmp - 1] == '\n') {
+                buf[len_tmp - 1] = '\0';
+            }
+
+            if (write(fd, buf, sizeof(buf)) < 0) {
+                perror("cli fifo write");
+            }
+            else printf("cli fifo write succeed\n");
+        }
+    }
+    printf("input mode exit\n");
+}
+
 int main(int argc, char *argv[])
 {
     // test_log();
@@ -313,6 +371,12 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalstop);
     signal(SIGTERM, signalstop);
 
+    efd_thread = eventfd(0, 0);
+    if (efd_thread < 0) {
+        perror("efd_thread init failed: ");
+    }
+
+    int input_mode = 0;
     int port = 10500;
     char str_IP[INET_ADDRSTRLEN] = "127.0.0.1";
     char name[50] = {0};
@@ -321,6 +385,10 @@ int main(int argc, char *argv[])
     int option_index = 0;
     while ((ch = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1) {
         switch (ch) {
+
+        case 'I':
+            input_mode = 1;
+            break;
 
         case 'p':
             port = atoi(optarg);
@@ -346,6 +414,14 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    char fifo_name[126] = {0};
+    sprintf(fifo_name, "%s_%s", fifo_name_pre, name);
+
+    if (input_mode == 1) {
+        input_loop(fifo_name);
+        return 0;
+    }
+
     printf("connect %s:%d\n", str_IP, port);
     int sockfd = Socket(AF_INET, SOCK_STREAM, 0);
 
@@ -357,21 +433,32 @@ int main(int argc, char *argv[])
 
     Connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
-    efd_thread = eventfd(0, 0);
-    if (efd_thread < 0) {
-        perror("efd_thread init failed: \n");
-    }
-
     //create thread to rece msg from server
     pthread_t ntid_rece;
     pthread_create(&ntid_rece, NULL, thread_rece, (void *)&sockfd);
+
+    if (access(fifo_name, F_OK) == 0) {
+		if (unlink(fifo_name) < 0) {
+			perror("unlink failed!");
+		}
+	}
+	int ret = mkfifo(fifo_name, 0777);
+	if (ret < 0) {
+		perror("mkfifo failed!\n");
+		return -1;
+	}
+	fd_fifo = open(fifo_name, O_RDWR);
+	if (fd_fifo < 0) {
+		perror("open failed");
+		return -1;
+	}
 
     fd_set allset;
     fd_set fdset;
     FD_ZERO(&allset);
     FD_ZERO(&fdset);
-    FD_SET(STDIN_FILENO, &allset);
-    int max_fd = STDIN_FILENO;
+    FD_SET(fd_fifo, &allset);
+    int max_fd = fd_fifo;
 
     // register name
     char send_buf[512] = {0};
@@ -388,7 +475,7 @@ int main(int argc, char *argv[])
     memset(&dataDesc.buff, 0, send_buf_len);
 
     //in main process, 'ctrl+c'(SIGNALINT) will interrupt select, so no deal with this statu
-    printf("input 'c help' to get help\n");
+    //printf("input 'c help' to get help\n");
     while (is_running) {
         fdset = allset;
         int nready = select(max_fd+1, &fdset, NULL, NULL, NULL);
@@ -397,20 +484,25 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (FD_ISSET(STDIN_FILENO, &fdset)) {
+        if (FD_ISSET(fd_fifo, &fdset)) {
             char buf[256] = {0};
-            if (fgets(buf, 256, stdin) == NULL) {
-                perror("fgets error: ");
-            }
+            // if (fgets(buf, 256, stdin) == NULL) {
+            //     perror("fgets error: ");
+            // }
 
-            if (buf[0] == '\n') {
-                continue;
-            }
+            // if (buf[0] == '\n') {
+            //     continue;
+            // }
 
-            int len_tmp = strlen(buf);
-            if (buf[len_tmp - 1] == '\n') {
-                buf[len_tmp - 1] = '\0';
+            // int len_tmp = strlen(buf);
+            // if (buf[len_tmp - 1] == '\n') {
+            //     buf[len_tmp - 1] = '\0';
+            // }
+
+            if (read(fd_fifo, buf, 256) < 0) {
+                perror("cli fifo read:");
             }
+            else printf("cli fifo read succeed\n");
 
             if (strncmp(buf, "c help", strlen("c help")) == 0) {
                 help_cmd();
@@ -518,6 +610,12 @@ int main(int argc, char *argv[])
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
             }
+        }
+    }
+
+    if (access(fifo_name, F_OK) == 0) {
+        if (unlink(fifo_name) < 0) {
+            perror("unlink failed!");
         }
     }
 
