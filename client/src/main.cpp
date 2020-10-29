@@ -42,12 +42,14 @@ void signalstop(int sign_no)
         uint64_t u = 10;
         ssize_t s = write(efd_thread, &u, sizeof(uint64_t));
         if (s != sizeof(uint64_t))
-            perror("efd_thread write");
+            perror("[cli] efd_thread write");
 
-        if (write(fd_fifo, "end", sizeof("end")) < 0)
-            perror("fd_fifo write");
+        if (fd_fifo > 0) {
+            if (write(fd_fifo, "end", sizeof("end")) < 0)
+                perror("[cli] fd_fifo write");
+        }
 
-        printf("in signalstop!\n");
+        printf("[cli] in signalstop!\n");
     }
 }
 
@@ -71,7 +73,7 @@ int send_self_info(int sockfd)
     int send_buf_len = get_len(tmp);
 
     if (write(sockfd, tmp, send_buf_len) < 0) {
-        perror("write failed!\n");
+        perror("[cli] write failed!\n");
         return -1;
     }
 
@@ -112,7 +114,7 @@ int send_cmd_ret(int sockfd, char *buff)
 
         FILE *fp = popen(&buff[i_space], "r");
         if (fp == NULL) {
-            perror("exe cmd failed");
+            perror("[cli] exe cmd failed");
             strncpy(dataDesc.buff, "exe cmd failed", strlen("exe cmd failed"));
             break;
         }
@@ -135,7 +137,7 @@ int send_cmd_ret(int sockfd, char *buff)
             break;
         }
 
-        printf("cmd [%s]\n", &buff[i_space]);
+        printf("[cli] cmd [%s]\n", &buff[i_space]);
         // printf("cmd ser [%s]\n", dataDesc.buff);
 
     } while(0);
@@ -144,7 +146,7 @@ int send_cmd_ret(int sockfd, char *buff)
     int send_buf_len = get_len(encode_tmp);
 
     if (write(sockfd, encode_tmp, send_buf_len) < 0) {
-        perror("write failed!\n");
+        perror("[cli] write failed!\n");
         return -1;
     }
 
@@ -173,14 +175,14 @@ void *thread_rece(void *arg)
         fdset = allset;
         int nready = select(max_fd+1, &fdset, NULL, NULL, NULL);
         if (nready <= 0) {
-            perror("select error");
+            perror("[cli] select error");
             break;
         }
 
         if (FD_ISSET(sockfd, &fdset)) {
             int n = Read(sockfd, buf_recv, MAX_BUF_LEN);
             if (n == 0) {
-                printf("the other side has been closed.\n");
+                printf("[cli] the other side has been closed.\n");
                 break;
             }
             else {
@@ -189,21 +191,21 @@ void *thread_rece(void *arg)
                 int len = get_len(buf_recv);
 
                 switch (dataDesc.type) {
-                    case MSG_REGISTER: printf("MSG_REGISTER\n"); break;         //usually won't arrive
-                    case MSG_SET_TO_SEND: printf("MSG_SET_TO_SEND\n"); break;   //usually won't arrive
+                    case MSG_REGISTER: printf("[cli] MSG_REGISTER\n"); break;         //usually won't arrive
+                    case MSG_SET_TO_SEND: printf("[cli] MSG_SET_TO_SEND\n"); break;   //usually won't arrive
                     case MSG_CONTENT: {
                         printf("ser---------->\n");
                         printf("%s\n\n", dataDesc.buff);
                         break;
                     }
-                    case MSG_GET_LIST: printf("MSG_GET_LIST\n"); break;         //usually won't arrive
+                    case MSG_GET_LIST: printf("[cli] MSG_GET_LIST\n"); break;         //usually won't arrive
                     case MSG_GET_SITE_STATUS: {
-                        printf("MSG_GET_SITE_STATUS\n");
+                        printf("[cli] MSG_GET_SITE_STATUS\n");
                         send_self_info(sockfd);
                         break;
                     }
                     case MSG_EXE_CMD_SITE: {
-                        printf("MSG_EXE_CMD_SITE\n");
+                        printf("[cli] MSG_EXE_CMD_SITE\n");
                         send_cmd_ret(sockfd, dataDesc.buff);
                         break;
                     }
@@ -216,15 +218,15 @@ void *thread_rece(void *arg)
             }
         }
         if (FD_ISSET(efd_thread, &fdset)) {
-            printf("select efd, to exit thread\n");
+            printf("[cli] select efd, to exit thread\n");
             uint64_t u = 0;
             ssize_t s = read(efd_thread, &u, sizeof(uint64_t));  
             if (s != sizeof(uint64_t))
-                perror("read");  
-            printf("read %llu efd_thread, to break\n",(unsigned long long)u);
+                perror("[cli] read");
+            else printf("[cli] read %llu efd_thread, to break\n",(unsigned long long)u);
         }
     }
-    printf("thread exit!\n");
+    printf("[cli] thread exit!\n");
     return NULL;
 }
 
@@ -270,7 +272,7 @@ int load_sup_cmd()
     g_sup_cmd.clear();
     FILE *fp = fopen("../sup_cmd.txt", "r");
     if (fp == NULL) {
-        perror("fopen sup_cmd.txt failed.");
+        perror("[cli] fopen sup_cmd.txt failed.");
         return -1;
     }
 
@@ -284,7 +286,7 @@ int load_sup_cmd()
         memset(cmd_tmp, 0, 40);
     }
     fclose(fp);
-    printf("load support cmd num is %ld\n", g_sup_cmd.size());
+    printf("[cli] load support cmd num is %ld\n", g_sup_cmd.size());
     return 0;
 }
 
@@ -292,7 +294,7 @@ void input_loop(const char *fifo_name)
 {
 	int fd = open(fifo_name, O_WRONLY);
 	if (fd < 0) {
-		perror("open failed");
+		perror("[cli] open failed");
 		return;
 	}
 
@@ -308,14 +310,14 @@ void input_loop(const char *fifo_name)
         fdset = allset;
         int nready = select(max_fd+1, &fdset, NULL, NULL, NULL);
         if (nready <= 0) {
-            perror("select error");
+            perror("[cli] select error");
             break;
         }
 
         if (FD_ISSET(STDIN_FILENO, &fdset)) {
             char buf[256] = {0};
             if (fgets(buf, 256, stdin) == NULL) {
-                perror("fgets error: ");
+                perror("[cli] fgets error: ");
             }
 
             if (buf[0] == '\n') {
@@ -328,12 +330,13 @@ void input_loop(const char *fifo_name)
             }
 
             if (write(fd, buf, sizeof(buf)) < 0) {
-                perror("cli fifo write");
+                perror("[cli] fifo write");
             }
-            else printf("cli fifo write succeed\n");
+            else printf("[cli] fifo write succeed\n");
         }
     }
-    printf("input mode exit\n");
+    close(fd);
+    printf("[cli] input mode exit\n");
 }
 
 int main(int argc, char *argv[])
@@ -373,7 +376,7 @@ int main(int argc, char *argv[])
 
     efd_thread = eventfd(0, 0);
     if (efd_thread < 0) {
-        perror("efd_thread init failed: ");
+        perror("[cli] efd_thread init failed: ");
     }
 
     int input_mode = 0;
@@ -422,7 +425,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    printf("connect %s:%d\n", str_IP, port);
+    printf("[cli] connect %s:%d\n", str_IP, port);
     int sockfd = Socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in servaddr;
@@ -439,17 +442,17 @@ int main(int argc, char *argv[])
 
     if (access(fifo_name, F_OK) == 0) {
 		if (unlink(fifo_name) < 0) {
-			perror("unlink failed!");
+			perror("[cli] unlink failed!");
 		}
 	}
 	int ret = mkfifo(fifo_name, 0777);
 	if (ret < 0) {
-		perror("mkfifo failed!\n");
+		perror("[cli] mkfifo failed!\n");
 		return -1;
 	}
 	fd_fifo = open(fifo_name, O_RDWR);
 	if (fd_fifo < 0) {
-		perror("open failed");
+		perror("[cli] open failed");
 		return -1;
 	}
 
@@ -469,7 +472,7 @@ int main(int argc, char *argv[])
 
     int send_buf_len = get_len(send_buf);
     if (write(sockfd, send_buf, send_buf_len) < 0) {
-        perror("cli write name failed");
+        perror("[cli]  write name failed");
     }
     memset(send_buf, 0, send_buf_len);
     memset(&dataDesc.buff, 0, send_buf_len);
@@ -480,7 +483,7 @@ int main(int argc, char *argv[])
         fdset = allset;
         int nready = select(max_fd+1, &fdset, NULL, NULL, NULL);
         if (nready <= 0) {
-            perror("select error");
+            perror("[cli] select error");
             break;
         }
 
@@ -500,9 +503,9 @@ int main(int argc, char *argv[])
             // }
 
             if (read(fd_fifo, buf, 256) < 0) {
-                perror("cli fifo read:");
+                perror("[cli] fifo read:");
             }
-            else printf("cli fifo read succeed\n");
+            else printf("[cli] fifo read succeed\n");
 
             if (strncmp(buf, "c help", strlen("c help")) == 0) {
                 help_cmd();
@@ -516,7 +519,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_SET_TO_SEND failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -528,7 +531,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_GET_LIST failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -540,7 +543,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_GET_SER_STATUS failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -552,7 +555,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_GET_SITE_STATUS failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -566,7 +569,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_EXE_CMD_SER failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -580,7 +583,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_EXE_CMD_SITE failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -592,7 +595,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_RELOAD_SUP_CMD failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -605,7 +608,7 @@ int main(int argc, char *argv[])
 
                 int send_buf_len = get_len(send_buf);
                 if (write(sockfd, send_buf, send_buf_len) < 0) {
-                    perror("cli write name failed");
+                    perror("[cli] write MSG_CONTENT failed");
                 }
                 memset(send_buf, 0, send_buf_len);
                 memset(&dataDesc.buff, 0, send_buf_len);
@@ -622,7 +625,7 @@ int main(int argc, char *argv[])
     pthread_join(ntid_rece, NULL);
 
     Close(sockfd);
-    printf("main exit!\n");
+    printf("[cli] main exit!\n");
     log_deinit();
 
     return 0;
