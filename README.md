@@ -5,18 +5,18 @@ platform: ubuntu
 ## How to build
 1. download
 2. make
-
+- cd server, then make
+- cd client, then make
 ## How to run
 
 ### server
 ./ser
 
 ### client
-./cli -n pc
+./cli -n ui &
+./cli -n ui -I
 
 ## description
-simple protocol
-`# type len date $`
 
 simple log system
 `export LOG_LEVEL=error/warn/info/debug`
