@@ -30,29 +30,26 @@
 
 # G++ = /usr/local/linaro-aarch64-2020.03-gcc9.3/bin/aarch64-linux-gnu-c++
 G++ = g++
-
 TARGET = cli
-SRC_FILES = src/main.cpp \
-			src/wrap.cpp \
-			../en_de_code.cpp \
-			../log.cpp
-
 CFLAGS = -I include -I ../ -Wall
 # LDFLAGS = -L /usr/local/bin
 LIBS = -lpthread
 
-OBJ = output/main.o output/wrap.o output/en_de_code.o output/log.o
+OBJ = output/client.o output/client_socket.o output/client_func.o output/mem_pool.o output/log.o
 
 test:${OBJ}
 	${G++} -o ${TARGET} ${OBJ} ${LDFLAGS} ${LIBS}
 
-output/main.o:src/main.cpp
+output/client.o:src/client.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
-output/wrap.o:src/wrap.cpp
+output/client_socket.o:src/client_socket.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
-output/en_de_code.o:../en_de_code.cpp
+output/client_func.o:src/client_func.cpp
+	${G++} -o $@ -c $< ${CFLAGS}
+
+output/mem_pool.o:../mem_pool.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
 output/log.o:../log.cpp
@@ -61,6 +58,5 @@ output/log.o:../log.cpp
 
 .PHONY:clean
 clean:
-	@echo ${SRC_FILES}
 	rm -rf ${TARGET} $(wildcard */*.o)
 

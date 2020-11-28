@@ -31,27 +31,20 @@
 G++ = g++
 
 TARGET = ser
-SRC_FILES = src/main.cpp \
-			src/wrap.cpp \
-			../en_de_code.cpp \
-			../log.cpp
 
 CFLAGS = -I include -I ../ -Wall
 # LDFLAGS = -L /usr/local/bin
 LIBS = -lpthread
 
-OBJ = output/main.o output/wrap.o output/en_de_code.o output/log.o
+OBJ = output/server.o output/mem_pool.o output/log.o
 
 test:${OBJ}
 	${G++} -o ${TARGET} ${OBJ} ${LDFLAGS} ${LIBS}
 
-output/main.o:src/main.cpp
+output/server.o:src/server.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
-output/wrap.o:src/wrap.cpp
-	${G++} -o $@ -c $< ${CFLAGS}
-
-output/en_de_code.o:../en_de_code.cpp
+output/mem_pool.o:../mem_pool.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
 output/log.o:../log.cpp
@@ -59,5 +52,4 @@ output/log.o:../log.cpp
 
 .PHONY:clean
 clean:
-	@echo ${SRC_FILES}
 	rm -rf ${TARGET} $(wildcard */*.o)
