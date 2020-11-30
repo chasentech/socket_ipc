@@ -35,7 +35,7 @@ CFLAGS = -I include -I ../ -Wall
 # LDFLAGS = -L /usr/local/bin
 LIBS = -lpthread
 
-OBJ = output/client.o output/client_socket.o output/client_func.o output/mem_pool.o output/log.o
+OBJ = output/client.o output/client_socket.o output/mem_pool.o output/log.o
 
 test:${OBJ}
 	${G++} -o ${TARGET} ${OBJ} ${LDFLAGS} ${LIBS}
@@ -44,9 +44,6 @@ output/client.o:src/client.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
 output/client_socket.o:src/client_socket.cpp
-	${G++} -o $@ -c $< ${CFLAGS}
-
-output/client_func.o:src/client_func.cpp
 	${G++} -o $@ -c $< ${CFLAGS}
 
 output/mem_pool.o:../mem_pool.cpp

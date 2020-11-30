@@ -16,7 +16,6 @@
 
 #include "client_socket.h"
 #include "pkg_define.h"
-#include "client_func.h"
 
 #define MAX_BUF_LEN 1024
 
