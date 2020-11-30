@@ -22,7 +22,7 @@
 
 using namespace std;
 
-#define DEBUG
+//#define DEBUG
 
 #define MAX_CLI_NUM 100
 #define MAX_BUF_LEN 1024
@@ -159,7 +159,7 @@ int send_list(vector<CliInfo> &vec, int sockfd)
     header.type = PKG_SHOW;
 
     vector<CliInfo>::iterator it;
-    printf("[ser] client number is = %ld\n", vec.size());
+    //printf("[ser] client number is = %ld\n", vec.size());
     for (it = vec.begin(); it != vec.end(); it++) {
         char tmp[256] = {0};
         sprintf(tmp, "name:%-10s, IP:%-16s, port:%d, it_fd:%d, to_fd:%d",
@@ -247,7 +247,6 @@ int send_cmd_ret(int sockfd, char *buff)
     return 0;
 }
 
-//TODO socket failed
 static int listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
 void signalstop(int signum)
@@ -314,7 +313,7 @@ void *thread_proc_msg(void *arg)
 
         int block_num = g_mem_pool.get_block_num();
 #ifdef DEBUG
-        printf("                                  block_num = %d\n", block_num);
+        printf("                                   block_num = %d\n", block_num);
 #endif
         struct timeval tv5, tv6;
         gettimeofday(&tv5, NULL);
@@ -342,7 +341,9 @@ void *thread_proc_msg(void *arg)
                 else break;
 
                 int len_total = (int)sizeof(PkgHeader) + header.length;
+#ifdef DEBUG
                 printf("PkgHeader = %d, len_total = %d\n", (int)sizeof(PkgHeader), len_total);
+#endif
                 if (block.use >= len_total) {
                     char *data = new char[len_total + 1]; // TODO 1.优化 2.+1 is end '\0'
                     memset(data, 0, len_total + 1);
@@ -354,9 +355,9 @@ void *thread_proc_msg(void *arg)
                             break;
                         }
                     }
-
+#ifdef DEBUG
                     printf("[ser] query header and body!\n");
-
+#endif
                     CliInfo *cli_info = NULL;
                     cli_info = get_cli_by_fd(g_vec_cli_info, block.id);
                     if (cli_info == NULL) {
@@ -365,14 +366,14 @@ void *thread_proc_msg(void *arg)
                     }
                     switch (header.type) {
                     case PKG_REGISTER: {
-                        printf("[ser] PKG_REGISTER\n");
+                        LOG_PRINT("[%s]->[ser] PKG_REGISTER\n", cli_info->name);
 
                         PkgHeader header_ret;
                         memset(&header_ret, 0, sizeof(header_ret));
                         header_ret.type = PKG_REGISTER_RET;
 
                         strcpy(cli_info->name, &data[sizeof(PkgHeader)]);
-                        printf("fill name: IP: %s, port: %d, name: %s, sockfd: %d, to_fd: %d\n",
+                        LOG_PRINT("fill name: IP: %s, port: %d, name: %s, sockfd: %d, to_fd: %d\n",
                                 cli_info->IP, cli_info->port, cli_info->name, cli_info->sockfd, cli_info->to_fd);
 
                         // TODO check username and password
@@ -381,11 +382,11 @@ void *thread_proc_msg(void *arg)
 
                         header_ret.length = strlen(STR_SUCCEED);
                         send(cli_info->sockfd, &header_ret, STR_SUCCEED, header_ret.length);
-
+                        LOG_PRINT("[ser]->[%s] PKG_REGISTER_RET %s\n", cli_info->name, STR_SUCCEED);
                         } break;
 
                     case PKG_SET_TO_SEND: {
-                        printf("[ser] PKG_SET_TO_SEND\n");
+                        LOG_PRINT("[%s]->[ser] PKG_SET_TO_SEND\n", cli_info->name);
 
                         PkgHeader header_ret;
                         memset(&header_ret, 0, sizeof(header_ret));
@@ -393,28 +394,41 @@ void *thread_proc_msg(void *arg)
 
                         CliInfo *cli_to = get_cli_by_name(g_vec_cli_info, &data[sizeof(PkgHeader)]);
                         if (cli_to == NULL) {
-                            printf("[%s] to_name is unknow\n", &data[sizeof(PkgHeader)]);
+                            LOG_PRINT("[%s] to_name is unknow\n", &data[sizeof(PkgHeader)]);
                             header_ret.length = strlen(STR_FAILED);
                             send(cli_info->sockfd, &header_ret, STR_FAILED, header_ret.length);
+                            LOG_PRINT("[ser]->[%s] PKG_SET_TO_SEND_RET %s\n", cli_info->name, STR_FAILED);
                         }
                         else {
                             cli_info->to_fd = cli_to->sockfd; //bind each other
                             cli_to->to_fd = cli_info->sockfd; //bind each other
                             header_ret.length = strlen(STR_SUCCEED);
                             send(cli_info->sockfd, &header_ret, STR_SUCCEED, header_ret.length);
+                            LOG_PRINT("[ser]->[%s] PKG_SET_TO_SEND_RET %s\n", cli_info->name, STR_SUCCEED);
                         }
 
                         } break;
 
                     case PKG_GET_LIST: {
-                        printf("[ser] PKG_GET_LIST\n");
+                        LOG_PRINT("[ser]->[%s] PKG_GET_LIST\n", cli_info->name);
                         send_list(g_vec_cli_info, block.id); //block.id = sockfd
                         } break;
 
                     case PKG_CLIENT_DEF: {
-                        printf("[ser] PKG_CLIENT_DEF\n");
-                        int ret = send(cli_info->to_fd, &header, &data[(int)sizeof(PkgHeader)], header.length);
-                        if (ret < 0) {
+                        LOG_PRINT("[ser] PKG_CLIENT_DEF\n");
+                        CliInfo *cli_to = get_cli_by_fd(g_vec_cli_info, cli_info->to_fd);
+                        if (cli_to != NULL) {
+                            int ret = send(cli_info->to_fd, &header, &data[(int)sizeof(PkgHeader)], header.length);
+                            if (ret < 0) {
+                                LOG_PRINT("[%s]->[%s] PKG_CLIENT_DEF succeed\n", cli_info->name, cli_to->name);
+                                cli_info->to_fd = cli_info->sockfd;
+                            }
+                            else {
+                                LOG_PRINT("[ser] PKG_CLIENT_DEF failed\n");
+                            }
+                        }
+                        else {
+                            LOG_PRINT("[ser] cli_to is NULL\n");
                             cli_info->to_fd = cli_info->sockfd;
                         }
                         } break;
@@ -468,6 +482,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (listenfd < 0) {
+        LOG_PERROR("socket failed");
+    }
+
     int opt = 1;
     setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -504,6 +522,9 @@ int main(int argc, char *argv[])
     char buf_recv[MAX_BUF_LEN] = {0};
     // char buf_send[MAX_BUF_LEN] = {0};
     LOG_PRINT("[ser] Accepting connections ...\n");
+    sleep(1);
+    //LOG_ERROR("[ser] Accepting connections ...\n");
+
 
     //in main process, 'ctrl+c'(SIGNALINT) will interrupt select, so no deal with this statu
     while (1) {

@@ -29,6 +29,10 @@ IpcClientBase::IpcClientBase()
     }
     is_running_thread = true;
 }
+void IpcClientBase::setCB(RecvCB cb)
+{
+    m_recv_cb = cb;
+}
 
 IpcClientBase::~IpcClientBase()
 {
@@ -130,8 +134,7 @@ int IpcClientBase::recvLoop(IpcClientBase *pthis)
                         char *tmp = new char[len_total]; // TODO 优化
                         memset(tmp, 0, len_total);
                         pthis->m_mem_pool.pop(block.id, tmp, len_total);
-                        //printf("[cli] query msg and body!\n");
-                        pthis->onRecv(tmp, len_total);
+                        pthis->m_recv_cb(tmp, len_total);
                         delete []tmp;
                     }
                     else break;

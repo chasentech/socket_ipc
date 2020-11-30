@@ -53,76 +53,87 @@ extern time_t now;
 extern struct tm *tm_now;
 
 #define LOG_PRINT(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_ERROR) { \
-        time(&now); tm_now = localtime(&now);\
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+    if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
+        fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1, \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        fprintf(g_fp, fmt, ##args); \
+    } \
+    else if (g_log_level >= LOG_LEVEL_ERROR) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1, \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
         printf(WHITE fmt NONE, ##args);\
-    } \
-    if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
-        fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
-        fprintf(g_fp, fmt, ##args);\
     }
 
 #define LOG_PERROR(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_ERROR) { \
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
-        printf(L_RED "[PERROR] [%d] [%s] " NONE fmt ": %s\n", __LINE__, __FILE__, ##args, strerror(errno));\
-    } \
     if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
         fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
         fprintf(g_fp, "[PERROR] [%d] [%s] " fmt ": %s\n", __LINE__, __FILE__, ##args, strerror(errno));\
+    } \
+    else if (g_log_level >= LOG_LEVEL_ERROR) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        printf(L_RED "[PERROR] [%d] [%s] " NONE fmt ": %s\n", __LINE__, __FILE__, ##args, strerror(errno));\
     }
 
 #define LOG_ERROR(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_ERROR) { \
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
-        printf(L_RED "[ERROR]  [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
-    } \
     if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
         fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
         fprintf(g_fp, "[ERROR]  [%d] [%s] " fmt, __LINE__, __FILE__, ##args);\
+    } \
+    else if (g_log_level >= LOG_LEVEL_ERROR) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        printf(L_RED "[ERROR]  [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
     }
 
 #define LOG_WARN(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_WARN) { \
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
-        printf(YELLOW "[WARN]   [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
-    } \
     if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
         fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
         fprintf(g_fp, "[WARN]   [%d] [%s] " fmt, __LINE__, __FILE__, ##args);\
+    } \
+    else if (g_log_level >= LOG_LEVEL_WARN) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        printf(YELLOW "[WARN]   [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
     }
 
 #define LOG_INFO(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_INFO) { \
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
-        printf(L_GREEN "[INFO]   [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
-    } \
     if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
         fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
         fprintf(g_fp, "[INFO]   [%d] [%s] " fmt, __LINE__, __FILE__, ##args);\
+    } \
+    else if (g_log_level >= LOG_LEVEL_INFO) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        printf(L_GREEN "[INFO]   [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
     }
 
 #define LOG_DEBUG(fmt, args...) \
-    if (g_log_level >= LOG_LEVEL_DEBUG) { \
-        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
-        printf(WHITE "[DEBUG]  [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
-    } \
     if (strncmp(g_file_name, "nofile", strlen("nofile")) != 0) { \
+        time(&now); tm_now = localtime(&now); \
         fprintf(g_fp, "[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);  \
         fprintf(g_fp, "[DEBUG]  [%d] [%s] " fmt, __LINE__, __FILE__, ##args);\
+    } \
+    else if (g_log_level >= LOG_LEVEL_DEBUG) { \
+        time(&now); tm_now = localtime(&now); \
+        printf("[%d-%2d-%2d %2d:%2d:%2d] ", tm_now->tm_year+1900, tm_now->tm_mon+1,  \
+             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec); \
+        printf(WHITE "[DEBUG]  [%d] [%s] " NONE fmt, __LINE__, __FILE__, ##args);\
     }
 
 void log_init();

@@ -84,82 +84,71 @@ void print_header(PkgHeader *header)
     printf("length: %d\n", header->length);
 }
 
-class IpcClient : public IpcClientBase
+int recv_CB(char *data, int len)
 {
-public:
-    IpcClient() {}
-    ~IpcClient() {}
+    PkgHeader header;
+    int header_size = (int)sizeof(PkgHeader);
+    memset(&header, 0, header_size);
+    memcpy((void *)&header, (void *)data, header_size);
+    //print_header(&header);
+    printf("head:[%d] + body[%d]\n", header_size, len - header_size);
 
-    virtual int onRecv(char *data, int len)
-    {
-        PkgHeader header;
-        int header_size = (int)sizeof(PkgHeader);
-        memset(&header, 0, header_size);
-        memcpy((void *)&header, (void *)data, header_size);
-        //print_header(&header);
-        printf("head:[%d] + body[%d]\n", header_size, len - header_size);
+    bool client_type = false;
+    switch (header.type) {
+    case PKG_REGISTER_RET: {
+        if (len - header_size < (int)strlen(STR_SUCCEED)) {
+            printf("[cli] PKG_REGISTER_RET buffer size err\n");
+        }
+        else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
+            register_statu = true;
+        }
+        else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
+            register_statu = false;
+        }
+        } break;
 
-        bool client_type = false;
-        switch (header.type) {
-        case PKG_REGISTER_RET: {
-            if (len - header_size < (int)strlen(STR_SUCCEED)) {
-                printf("[cli] PKG_REGISTER_RET buffer size err\n");
-            }
-            else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
-                register_statu = true;
-            }
-            else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
-                register_statu = false;
-            }
-            } break;
+    case PKG_SET_TO_SEND_RET: {
+        if (len - header_size < (int)strlen(STR_SUCCEED)) {
+            printf("[cli] PKG_SET_TO_SEND_RET buffer size err\n");
+        }
+        else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
+            printf("[cli] PKG_SET_TO_SEND_RET set succeed\n");
+        }
+        else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
+            printf("[cli] PKG_SET_TO_SEND_RET set failed\n");
+        }
+        } break;
 
-        case PKG_SET_TO_SEND_RET: {
-            if (len - header_size < (int)strlen(STR_SUCCEED)) {
-                printf("[cli] PKG_SET_TO_SEND_RET buffer size err\n");
-            }
-            else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
-                printf("[cli] PKG_SET_TO_SEND_RET set succeed\n");
-            }
-            else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
-                printf("[cli] PKG_SET_TO_SEND_RET set failed\n");
-            }
-            } break;
-
-        case PKG_SHOW: {
-            printf("[cli] PKG_SHOW\n");
-            printf("%.*s\n", len - header_size, &data[header_size]); 
+    case PKG_SHOW: {
+        printf("[cli] PKG_SHOW\n");
+        printf("%.*s\n", len - header_size, &data[header_size]); 
 // %.*s 其中的.*表示显示的精度 对字符串输出(s)类型来说就是宽度
 // 这个*代表的值由后面的参数列表中的整数型(int)值给出
-            } break;
+        } break;
 
-        case PKG_CLIENT_DEF: {
-            client_type = true;
+    case PKG_CLIENT_DEF: {
+        client_type = true;
+        } break;
+
+    default: break;
+    }
+
+    if (client_type == true) {
+        switch (header.client_type) {
+        case PKG_CLI_MSG: {
+            printf("[cli] PKG_CLI_MSG\n");
+            printf("%.*s\n", len - header_size, &data[header_size]); 
             } break;
 
         default: break;
         }
-
-        if (client_type == true) {
-            switch (header.client_type) {
-            case PKG_CLI_MSG: {
-                printf("[cli] PKG_CLI_MSG\n");
-                printf("%.*s\n", len - header_size, &data[header_size]); 
-                } break;
-
-            default: break;
-            }
-        }
-
-
-        static unsigned int i_rece = 0;
-        i_rece++;
-        printf("***********************************rece count is %d\n", i_rece);
-        return 0;
     }
 
-private:
-
-};
+    static unsigned int i_rece = 0;
+    i_rece++;
+    printf("***********************************rece count is %d\n", i_rece);
+    return 0;
+}
 
 static void usage(int argc, char *argv[])
 {
@@ -289,10 +278,6 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    //connect
-    IpcClient ipc_client;
-    ipc_client.connectServer(ip.c_str(), port);
-
     if (access(fifo_name, F_OK) == 0) {
 		if (unlink(fifo_name) < 0) {
 			perror("[cli] unlink failed!");
@@ -308,6 +293,11 @@ int main(int argc, char *argv[])
 		perror("[cli] open failed");
 		return -1;
 	}
+
+    //connect
+    IpcClientBase ipc_client;
+    ipc_client.setCB(&recv_CB);
+    ipc_client.connectServer(ip.c_str(), port);
 
     fd_set allset;
     fd_set fdset;
@@ -336,6 +326,14 @@ int main(int argc, char *argv[])
     }
     if (i_register >= 10) {
         printf("[cli] register faield\n");
+        ipc_client.disConnect();
+
+        if (access(fifo_name, F_OK) == 0) {
+            if (unlink(fifo_name) < 0) {
+                perror("unlink failed!");
+            }
+        }
+
         return -1;
     }
     printf("[cli] register success\n");

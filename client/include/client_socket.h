@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <thread>
+#include <functional>
 
 #include "pkg_define.h"
 #include "mem_pool.h"
@@ -15,6 +16,8 @@ using namespace std;
 class IpcClientBase
 {
 public:
+    using RecvCB = std::function<int(char *data, int len)>;
+
     IpcClientBase();
     virtual ~IpcClientBase();
 
@@ -22,7 +25,7 @@ public:
     int disConnect();
 
     int send(PkgHeader *header, const char *data, int len);
-    virtual int onRecv(char *data, int len) = 0;
+    void setCB(RecvCB cb);
 
 private:
     static int recvLoop(IpcClientBase *pthis);
@@ -35,6 +38,8 @@ private:
 
     thread thread_recv;
     MemPool m_mem_pool;
+
+    RecvCB m_recv_cb;
 };
 
 #endif

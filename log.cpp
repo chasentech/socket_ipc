@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include "log.h"
 
-enum LOG_LEVEL g_log_level = LOG_LEVEL_ERROR;
+enum LOG_LEVEL g_log_level = LOG_LEVEL_WARN;
 char g_file_name[256] = "nofile";
 FILE *g_fp = NULL;
 

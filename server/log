@@ -1,0 +1,48 @@
+[2020-11-30 13:28:53] [ser] Accepting connections ...
+[2020-11-30 13:28:58] [ser] new connect arived
+[2020-11-30 13:28:58] [ser] connect from 127.0.0.1 at PORT 54164
+[2020-11-30 13:28:58] []->[ser] PKG_REGISTER
+[2020-11-30 13:28:58] fill name: IP: 127.0.0.1, port: 54164, name: u1, sockfd: 8, to_fd: 8
+[2020-11-30 13:28:58] [ser]->[u1] PKG_REGISTER_RET succeed
+[2020-11-30 13:29: 4] [ser] PKG_GET_LIST
+[2020-11-30 13:29: 4] [ser]->[u1] PKG_GET_LIST
+[2020-11-30 13:29:10] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:29:10] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:29:14] [u1]->[ser] PKG_SET_TO_SEND
+[2020-11-30 13:29:14] [uiuiui] to_name is unknow
+[2020-11-30 13:29:14] [ser]->[u1] PKG_SET_TO_SEND_RET failed 
+[2020-11-30 13:29:16] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:29:16] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:29:17] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:29:17] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:29:19] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:29:19] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:30:16] [ser] Accepting connections ...
+[2020-11-30 13:32:46] [ser] Accepting connections ...
+[2020-11-30 13:33:31] [ser] Accepting connections ...
+[2020-11-30 13:44:35] [ser] Accepting connections ...
+[2020-11-30 13:46:22] [ser] Accepting connections ...
+[2020-11-30 13:46:29] [ser] new connect arived
+[2020-11-30 13:46:29] [ser] connect from 127.0.0.1 at PORT 54398
+[2020-11-30 13:46:29] []->[ser] PKG_REGISTER
+[2020-11-30 13:46:29] fill name: IP: 127.0.0.1, port: 54398, name: u1, sockfd: 8, to_fd: 8
+[2020-11-30 13:46:29] [ser]->[u1] PKG_REGISTER_RET succeed
+[2020-11-30 13:46:32] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:32] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:33] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:33] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:33] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:33] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:33] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:33] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:34] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:34] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:38] [ser] PKG_GET_LIST
+[2020-11-30 13:46:38] [ser]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:40] [u1]->[ser] PKG_SET_TO_SEND
+[2020-11-30 13:46:40] [asdf] to_name is unknow
+[2020-11-30 13:46:40] [ser]->[u1] PKG_SET_TO_SEND_RET failed 
+[2020-11-30 13:46:42] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:42] [u1]->[u1] PKG_GET_LIST
+[2020-11-30 13:46:43] [ser] PKG_CLIENT_DEF
+[2020-11-30 13:46:43] [u1]->[u1] PKG_GET_LIST
