@@ -44,12 +44,11 @@ typedef struct cmdStr
 
 cmdStr g_cmd_str[PKG_CLI_TYPE_NUM] = {
     ".1", "to register [TBD]",                  // PKG_REGISTER
-    "NULL",  "",                                // PKG_REGISTER_RET
-    ".2", "set up chat with name. eg: .2 name. ",       // PKG_SET_TO_SEND
-    "NULL",  "",                                //PKG_SET_TO_SEND_RET
+    ".2", "set up chat with name. eg: .2 name.",       // PKG_SET_TO_SEND
     ".3", "get list online",                    // PKG_GET_LIST
+    ".4", "exec cmd on server. eg: .2 ls.",     // PKG_EXE_CMD
+    "NULL",  "",                                // PKG_RET_TO_CLI
     "NULL",  "",                                // PKG_SHOW
-    ".4", "exec cmd on server [TBD]",           // PKG_EXE_CMD
     "NULL",  "",                                // PKG_CLIENT_DEF  // end of ser cmd
     ".5", "send msg to aother client [TBD]",    // PKG_CLI_MSG
     ".6", "exec cmd on aother client [TBD]",    // PKG_CLI_EXE_CMD
@@ -95,27 +94,29 @@ int recv_CB(char *data, int len)
 
     bool client_type = false;
     switch (header.type) {
-    case PKG_REGISTER_RET: {
-        if (len - header_size < (int)strlen(STR_SUCCEED)) {
+    case PKG_RET_TO_CLI: {
+        if (len - header_size < (int)strlen(STR_RET_LENGTH)) {
             printf("[cli] PKG_REGISTER_RET buffer size err\n");
         }
-        else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
+        else if (strncmp(&data[header_size], STR_REGISTER_SUCCEED, strlen(STR_REGISTER_SUCCEED)) == 0) {
+            printf("[cli] REGISTER_SUCCEED\n");
             register_statu = true;
         }
-        else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
+        else if (strncmp(&data[header_size], STR_REGISTER_FAILED, strlen(STR_REGISTER_FAILED)) == 0) {
+            printf("[cli] REGISTER_FAILED\n");
             register_statu = false;
         }
-        } break;
-
-    case PKG_SET_TO_SEND_RET: {
-        if (len - header_size < (int)strlen(STR_SUCCEED)) {
-            printf("[cli] PKG_SET_TO_SEND_RET buffer size err\n");
+        else if (strncmp(&data[header_size], STR_SET_TO_SEND_SUCCEED, strlen(STR_SET_TO_SEND_SUCCEED)) == 0) {
+            printf("[cli] SET_TO_SEND_SUCCEED\n");
         }
-        else if (strncmp(&data[header_size], STR_SUCCEED, strlen(STR_SUCCEED)) == 0) {
-            printf("[cli] PKG_SET_TO_SEND_RET set succeed\n");
+        else if (strncmp(&data[header_size], STR_SET_TO_SEND_FAILED, strlen(STR_SET_TO_SEND_FAILED)) == 0) {
+            printf("[cli] SET_TO_SEND_FAILED\n");
         }
-        else if (strncmp(&data[header_size], STR_FAILED, strlen(STR_FAILED)) == 0) {
-            printf("[cli] PKG_SET_TO_SEND_RET set failed\n");
+        else if (strncmp(&data[header_size], STR_EXE_CMD_SUCCEED, strlen(STR_EXE_CMD_SUCCEED)) == 0) {
+            printf("[cli] EXE_CMD_SUCCEED\n");
+        }
+        else if (strncmp(&data[header_size], STR_EXE_CMD_FAILED, strlen(STR_EXE_CMD_FAILED)) == 0) {
+            printf("[cli] EXE_CMD_FAILED\n");
         }
         } break;
 
@@ -153,7 +154,7 @@ int recv_CB(char *data, int len)
 static void usage(int argc, char *argv[])
 {
     printf("%s usage:\n", argv[0]);
-    printf("\t -t:  into input mode.\n");
+    printf("\t -I:  into input mode.\n");
     printf("\t -i:  input server IP addr, default 127.0.0.1\n");
     printf("\t -p:  input server portm default 10500.\n");
     printf("\t -n:  input client name.\n");
@@ -368,6 +369,8 @@ int main(int argc, char *argv[])
             else if (strncmp(buf, g_cmd_str[PKG_SET_TO_SEND].short_str,
                         strlen(g_cmd_str[PKG_SET_TO_SEND].short_str)) == 0) {
                 printf("input .2\n");
+                //TODO remove space.
+                //TODO check str on client or server
                 int cmd_len = strlen(g_cmd_str[PKG_SET_TO_SEND].short_str) + 1; // 1 is space
                 header.type = PKG_SET_TO_SEND;
                 if (cmd_len < (int)strlen(buf)) {
@@ -384,6 +387,23 @@ int main(int argc, char *argv[])
                 header.type = PKG_GET_LIST;
                 header.length = 0;
                 ipc_client.send(&header, NULL, header.length);
+            }
+            else if (strncmp(buf, g_cmd_str[PKG_EXE_CMD].short_str,
+                        strlen(g_cmd_str[PKG_EXE_CMD].short_str)) == 0) {
+                printf("input .4\n");
+                //TODO remove space
+                //TODO check str on client or server
+                int cmd_len = strlen(g_cmd_str[PKG_EXE_CMD].short_str) + 1; // 1 is space
+                header.type = PKG_EXE_CMD;
+                //header.length = 0;
+                //ipc_client.send(&header, NULL, header.length);
+                if (cmd_len < (int)strlen(buf)) {
+                    header.length = strlen(buf) - cmd_len;
+                    ipc_client.send(&header, &buf[cmd_len], header.length);
+                }
+                else {
+                    printf("input to_name err\n\n");
+                }
             }
             else {  //default is seng msg each other
                 header.type = PKG_CLIENT_DEF;

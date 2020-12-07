@@ -23,19 +23,23 @@
 //     char buff[MAX_BUF_LEN];
 // }DataDesc;
 
-#define STR_SUCCEED "succeed"
-#define STR_FAILED  "failed "
+#define STR_RET_LENGTH "ABCD"
+#define STR_REGISTER_SUCCEED "AA s"
+#define STR_REGISTER_FAILED  "AA f"
+#define STR_SET_TO_SEND_SUCCEED "BB s"
+#define STR_SET_TO_SEND_FAILED  "BB f"
+#define STR_EXE_CMD_SUCCEED "CC s"
+#define STR_EXE_CMD_FAILED  "CC f"
 
 typedef enum PkgType
 {
-    PKG_REGISTER,
-    PKG_REGISTER_RET,
-    PKG_SET_TO_SEND,
-    PKG_SET_TO_SEND_RET,
-    PKG_GET_LIST,
-    PKG_SHOW,
-    PKG_EXE_CMD,
-    PKG_CLIENT_DEF,
+    PKG_REGISTER,           //cli--->ser
+    PKG_SET_TO_SEND,        //cli--->ser
+    PKG_GET_LIST,           //cli--->ser
+    PKG_EXE_CMD,            //cli--->ser
+    PKG_RET_TO_CLI,         //cli<---ser
+    PKG_SHOW,               //cli<---ser
+    PKG_CLIENT_DEF,         //cli--->cli
     PKG_TYPE_NUM
 }PkgType;
 
