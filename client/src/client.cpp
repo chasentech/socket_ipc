@@ -29,6 +29,8 @@ bool g_running = true;
 
 bool register_statu = false;
 
+IpcClientBase ipc_client;
+
 typedef enum PkgClientType
 {
     PKG_CLI_MSG = PKG_TYPE_NUM,
@@ -50,8 +52,8 @@ cmdStr g_cmd_str[PKG_CLI_TYPE_NUM] = {
     "NULL",  "",                                // PKG_RET_TO_CLI
     "NULL",  "",                                // PKG_SHOW
     "NULL",  "",                                // PKG_CLIENT_DEF  // end of ser cmd
-    ".5", "send msg to aother client [TBD]",    // PKG_CLI_MSG
-    ".6", "exec cmd on aother client [TBD]",    // PKG_CLI_EXE_CMD
+    ".5", "send msg to aother client",          // PKG_CLI_MSG
+    ".6", "exec cmd on aother client",          // PKG_CLI_EXE_CMD
 };
 
 int show_client_help()
@@ -83,6 +85,44 @@ void print_header(PkgHeader *header)
     printf("length: %d\n", header->length);
 }
 
+//TODO remove space
+//TODO check str on client or server
+int send_cmd_ret(char *buff)
+{
+    PkgHeader header;
+    memset(&header, 0, sizeof(PkgHeader));
+    header.type = PKG_CLIENT_DEF;
+    header.client_type = PKG_CLI_MSG;
+
+    do {
+        FILE *fp = popen(buff, "r");
+        if (fp == NULL) {
+            perror("[cli] exe cmd failed");
+            break;
+        }
+
+        char cmd_tmp[256] = {0};
+        // int cmd_tmp_len = 0;
+        while(fgets(cmd_tmp, 256, fp) != NULL) {
+
+            header.length = strlen(cmd_tmp);
+            ipc_client.send(&header, cmd_tmp, header.length);
+
+            // //每次读取一行
+            // int len = strlen(cmd_tmp);
+            // strncpy(&dataDesc.buff[cmd_tmp_len], cmd_tmp, len);
+            // cmd_tmp_len += len;
+            memset(cmd_tmp, 0, 256);
+        }
+        pclose(fp);
+        fp = NULL;
+
+    } while (0);
+
+    return 0;
+}
+
+
 int recv_CB(char *data, int len)
 {
     PkgHeader header;
@@ -112,24 +152,22 @@ int recv_CB(char *data, int len)
         else if (strncmp(&data[header_size], STR_SET_TO_SEND_FAILED, strlen(STR_SET_TO_SEND_FAILED)) == 0) {
             printf("[cli] SET_TO_SEND_FAILED\n");
         }
-        else if (strncmp(&data[header_size], STR_EXE_CMD_SUCCEED, strlen(STR_EXE_CMD_SUCCEED)) == 0) {
-            printf("[cli] EXE_CMD_SUCCEED\n");
+        else {
+            printf("[cli] PKG_RET_TO_CLI unknow\n");
         }
-        else if (strncmp(&data[header_size], STR_EXE_CMD_FAILED, strlen(STR_EXE_CMD_FAILED)) == 0) {
-            printf("[cli] EXE_CMD_FAILED\n");
-        }
-        } break;
+    } break;
 
     case PKG_SHOW: {
         printf("[cli] PKG_SHOW\n");
-        printf("%.*s\n", len - header_size, &data[header_size]); 
+        //printf("%.*s\n", len - header_size, &data[header_size]);
+        printf("%s\n", &data[header_size]); //TODO end is \0 in client_socket.cpp
 // %.*s 其中的.*表示显示的精度 对字符串输出(s)类型来说就是宽度
 // 这个*代表的值由后面的参数列表中的整数型(int)值给出
-        } break;
+    } break;
 
     case PKG_CLIENT_DEF: {
         client_type = true;
-        } break;
+    } break;
 
     default: break;
     }
@@ -138,8 +176,13 @@ int recv_CB(char *data, int len)
         switch (header.client_type) {
         case PKG_CLI_MSG: {
             printf("[cli] PKG_CLI_MSG\n");
-            printf("%.*s\n", len - header_size, &data[header_size]); 
-            } break;
+            //printf("%.*s\n", len - header_size, &data[header_size]);
+            printf("%s\n", &data[header_size]);
+        } break;
+        case PKG_CLI_EXE_CMD: {
+            printf("[cli] PKG_CLI_EXE_CMD\n");
+            send_cmd_ret(&data[sizeof(PkgHeader)]);
+        } break;
 
         default: break;
         }
@@ -296,7 +339,6 @@ int main(int argc, char *argv[])
 	}
 
     //connect
-    IpcClientBase ipc_client;
     ipc_client.setCB(&recv_CB);
     ipc_client.connectServer(ip.c_str(), port);
 
@@ -402,9 +444,25 @@ int main(int argc, char *argv[])
                     ipc_client.send(&header, &buf[cmd_len], header.length);
                 }
                 else {
-                    printf("input to_name err\n\n");
+                    printf("input exe cmd err\n\n");
                 }
             }
+            else if (strncmp(buf, g_cmd_str[PKG_CLI_EXE_CMD].short_str,
+                        strlen(g_cmd_str[PKG_CLI_EXE_CMD].short_str)) == 0) {
+                printf("input .5\n");
+                header.type = PKG_CLIENT_DEF;
+                header.client_type = PKG_CLI_EXE_CMD;
+
+                int cmd_len = strlen(g_cmd_str[PKG_CLI_EXE_CMD].short_str) + 1; // 1 is space
+                if (cmd_len < (int)strlen(buf)) {
+                    header.length = strlen(buf) - cmd_len;
+                    ipc_client.send(&header, &buf[cmd_len], header.length);
+                }
+                else {
+                    printf("input cli exe cmd err\n\n");
+                }
+            }
+
             else {  //default is seng msg each other
                 header.type = PKG_CLIENT_DEF;
                 header.client_type = PKG_CLI_MSG;

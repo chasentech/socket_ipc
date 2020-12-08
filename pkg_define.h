@@ -23,13 +23,11 @@
 //     char buff[MAX_BUF_LEN];
 // }DataDesc;
 
-#define STR_RET_LENGTH "ABCD"
+#define STR_RET_LENGTH "XXXX"
 #define STR_REGISTER_SUCCEED "AA s"
 #define STR_REGISTER_FAILED  "AA f"
 #define STR_SET_TO_SEND_SUCCEED "BB s"
 #define STR_SET_TO_SEND_FAILED  "BB f"
-#define STR_EXE_CMD_SUCCEED "CC s"
-#define STR_EXE_CMD_FAILED  "CC f"
 
 typedef enum PkgType
 {

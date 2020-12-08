@@ -131,8 +131,8 @@ int IpcClientBase::recvLoop(IpcClientBase *pthis)
 
                     int len_total = (int)sizeof(PkgHeader) + msg.length;
                     if (block.use >= len_total) {
-                        char *tmp = new char[len_total]; // TODO 优化
-                        memset(tmp, 0, len_total);
+                        char *tmp = new char[len_total+1]; // TODO 优化
+                        memset(tmp, 0, len_total+1);
                         pthis->m_mem_pool.pop(block.id, tmp, len_total);
                         pthis->m_recv_cb(tmp, len_total);
                         delete []tmp;

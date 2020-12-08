@@ -185,7 +185,7 @@ int send_cmd_ret(int sockfd, char *buff)
     do {
         FILE *fp = popen(buff, "r");
         if (fp == NULL) {
-            perror("[ser] exe cmd failed");
+            LOG_PERROR("[ser] exe cmd failed");
             break;
         }
 
@@ -205,8 +205,7 @@ int send_cmd_ret(int sockfd, char *buff)
         pclose(fp);
         fp = NULL;
 
-    } while (0);    
-
+    } while (0);
 
 /*
     char encode_tmp[1024] = {0};
@@ -411,7 +410,7 @@ void *thread_proc_msg(void *arg)
 
                         header_ret.length = strlen(STR_REGISTER_SUCCEED);
                         send(cli_info->sockfd, &header_ret, STR_REGISTER_SUCCEED, header_ret.length);
-                        LOG_PRINT("[ser]->[%s] PKG_REGISTER_RET %s\n", cli_info->name, STR_REGISTER_SUCCEED);
+                        LOG_PRINT("[ser]->[%s] STR_REGISTER_SUCCEED\n", cli_info->name);
                         } break;
 
                     case PKG_SET_TO_SEND: {
@@ -426,14 +425,14 @@ void *thread_proc_msg(void *arg)
                             LOG_PRINT("[%s] to_name is unknow\n", &data[sizeof(PkgHeader)]);
                             header_ret.length = strlen(STR_SET_TO_SEND_FAILED);
                             send(cli_info->sockfd, &header_ret, STR_SET_TO_SEND_FAILED, header_ret.length);
-                            LOG_PRINT("[ser]->[%s] PKG_SET_TO_SEND_RET %s\n", cli_info->name, STR_SET_TO_SEND_FAILED);
+                            LOG_PRINT("[ser]->[%s] STR_SET_TO_SEND_FAILED\n", cli_info->name);
                         }
                         else {
                             cli_info->to_fd = cli_to->sockfd; //bind each other
                             cli_to->to_fd = cli_info->sockfd; //bind each other
                             header_ret.length = strlen(STR_SET_TO_SEND_SUCCEED);
                             send(cli_info->sockfd, &header_ret, STR_SET_TO_SEND_SUCCEED, header_ret.length);
-                            LOG_PRINT("[ser]->[%s] PKG_SET_TO_SEND_RET %s\n", cli_info->name, STR_SET_TO_SEND_SUCCEED);
+                            LOG_PRINT("[ser]->[%s] STR_SET_TO_SEND_SUCCEED\n", cli_info->name);
                         }
                         } break;
 
@@ -454,10 +453,10 @@ void *thread_proc_msg(void *arg)
                             int ret = send(cli_info->to_fd, &header, &data[(int)sizeof(PkgHeader)], header.length);
                             if (ret < 0) {
                                 LOG_PRINT("[ser] PKG_CLIENT_DEF failed\n");
+                                cli_info->to_fd = cli_info->sockfd;
                             }
                             else {
                                 LOG_PRINT("[%s]->[%s] PKG_CLIENT_DEF succeed\n", cli_info->name, cli_to->name);
-                                cli_info->to_fd = cli_info->sockfd;
                             }
                         }
                         else {
