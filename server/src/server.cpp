@@ -110,15 +110,19 @@ CliInfo *get_cli_by_to_fd(vector<CliInfo> &vec, int to_fd)
 
 int send(int sockfd, PkgHeader *header, const char *data, int len)
 {
+    if (len < 0) {
+        printf("data len < 0, err\n");
+        return 0;
+    }
     if (write(sockfd, header, sizeof(PkgHeader)) < 0) {
-        perror("[ser] write PkgHeader failed");
+        perror("[cli] write PkgHeader failed");
         return -1;
     }
-    if (len <= 0) {
+    if (len == 0) {
         return 0;
     }
     if (write(sockfd, data, len) < 0) {
-        perror("[ser] write data failed");
+        perror("[cli] write data failed");
         return -1;
     }
     return 0;

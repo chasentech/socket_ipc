@@ -70,16 +70,18 @@ int IpcClientBase::send(PkgHeader *header, const char *data, int len)
 {
     if (len < 0) {
         printf("data len < 0, err\n");
-        return -1;
+        return 0;
     }
     if (write(m_sockfd, header, sizeof(PkgHeader)) < 0) {
         perror("[cli] write PkgHeader failed");
+        return -1;
     }
     if (len == 0) {
         return 0;
     }
     if (write(m_sockfd, data, len) < 0) {
         perror("[cli] write data failed");
+        return -1;
     }
     return 0;
 }
@@ -131,11 +133,15 @@ int IpcClientBase::recvLoop(IpcClientBase *pthis)
 
                     int len_total = (int)sizeof(PkgHeader) + msg.length;
                     if (block.use >= len_total) {
-                        char *tmp = new char[len_total+1]; // TODO 优化
-                        memset(tmp, 0, len_total+1);
-                        pthis->m_mem_pool.pop(block.id, tmp, len_total);
-                        pthis->m_recv_cb(tmp, len_total);
-                        delete []tmp;
+                        char *data = new char[len_total + 1]; // TODO 1.优化 2.+1 is end '\0'
+                        if (data == NULL) {
+                            perror("[cli] new data failed, break");
+                            break;
+                        }
+                        memset(data, 0, len_total + 1);
+                        pthis->m_mem_pool.pop(block.id, data, len_total);
+                        pthis->m_recv_cb(data, len_total);
+                        if (data) delete []data;
                     }
                     else break;
                 }

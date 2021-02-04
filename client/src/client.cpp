@@ -340,7 +340,10 @@ int main(int argc, char *argv[])
 
     //connect
     ipc_client.setCB(&recv_CB);
-    ipc_client.connectServer(ip.c_str(), port);
+    if (ipc_client.connectServer(ip.c_str(), port) < 0) {
+        printf("ipc_client.connectServer failed.\n");
+        return -1;
+    }
 
     fd_set allset;
     fd_set fdset;
