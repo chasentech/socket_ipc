@@ -112,8 +112,12 @@ int IpcClientBase::recvLoop(IpcClientBase *pthis)
 
         if (FD_ISSET(sockfd, &fdset)) {
             int n = read(sockfd, buf_recv, MAX_BUF_LEN);
-            if (n == 0) {
-                printf("[cli] the other side has been closed.\n");
+            if (n < 0) {
+                perror("read err");
+                break;
+            }
+            else if (n == 0) {
+                printf("the other side has been closed.\n");
                 break;
             }
             else {
